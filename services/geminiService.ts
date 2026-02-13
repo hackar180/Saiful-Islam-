@@ -1,7 +1,16 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const API_KEY = process.env.API_KEY || "";
+// Safe access to process.env for browser environments
+const getApiKey = () => {
+  try {
+    return process.env.API_KEY || "";
+  } catch (e) {
+    return "";
+  }
+};
+
+const API_KEY = getApiKey();
 
 export const analyzeLogs = async (logs: string) => {
   if (!API_KEY) return "AI Analysis requires an API Key.";
