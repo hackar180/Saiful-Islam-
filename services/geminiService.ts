@@ -1,21 +1,31 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Safe access to process.env for browser environments
-const getApiKey = () => {
+/**
+ * Safely retrieves the API Key from the environment.
+ * Prevents ReferenceError in browser-only environments.
+ */
+const getApiKey = (): string => {
   try {
-    return process.env.API_KEY || "";
+    // Check if process exists and has env
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return process.env.API_KEY;
+    }
+    // Check global window object as fallback
+    if (typeof window !== 'undefined' && (window as any).process?.env?.API_KEY) {
+      return (window as any).process.env.API_KEY;
+    }
   } catch (e) {
-    return "";
+    console.warn("API Key could not be retrieved from environment.");
   }
+  return "";
 };
 
-const API_KEY = getApiKey();
-
 export const analyzeLogs = async (logs: string) => {
-  if (!API_KEY) return "AI Analysis requires an API Key.";
+  const apiKey = getApiKey();
+  if (!apiKey) return "AI Analysis requires an API Key set in environment variables.";
   
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -33,9 +43,10 @@ export const analyzeLogs = async (logs: string) => {
 };
 
 export const suggestCommands = async (issue: string) => {
-  if (!API_KEY) return [];
+  const apiKey = getApiKey();
+  if (!apiKey) return [];
   
-  const ai = new GoogleGenAI({ apiKey: API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
