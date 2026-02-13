@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import StatusCard from '../components/StatusCard';
 import { MOCK_DEVICES } from '../constants';
 import { DeviceNode } from '../types';
@@ -9,15 +9,15 @@ const playSound = (action: string) => {
   const audioMap: Record<string, string> = {
     scan: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', 
     success: 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3',
-    // New High-Tech Hacking Alarm Sound
-    alarm: 'https://www.soundboard.com/handler/DownLoadTrack.ashx?cliptitle=Hacker+Siren&filename=mt/MTI2NDU0NjYxMjY0NTU1_v_2bWq1B_2fGzE.mp3',
+    // High-Tech Hacking Alarm Siren
+    alarm: 'https://actions.google.com/sounds/v1/alarms/emergency_siren.ogg',
     shield: 'https://assets.mixkit.co/active_storage/sfx/2641/2641-preview.mp3',
     breach: 'https://assets.mixkit.co/active_storage/sfx/1003/1003-preview.mp3'
   };
   
   try {
     const audio = new Audio(audioMap[action]);
-    audio.volume = 0.6;
+    audio.volume = 0.9;
     audio.loop = action === 'alarm';
     audio.play().catch(() => console.warn("Audio needs interaction"));
     return audio;
@@ -27,6 +27,7 @@ const playSound = (action: string) => {
 };
 
 const Dashboard: React.FC = () => {
+  const [isInitialized, setIsInitialized] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'danger' } | null>(null);
   const [showHackerAlert, setShowHackerAlert] = useState(false);
@@ -36,6 +37,7 @@ const Dashboard: React.FC = () => {
   const [temp, setTemp] = useState(31.4);
   const [newNode, setNewNode] = useState({ name: '', os: 'Android 14' });
   const [isRegistering, setIsRegistering] = useState(false);
+  const alertTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Request Notification Permission on Mount
   useEffect(() => {
@@ -56,18 +58,25 @@ const Dashboard: React.FC = () => {
     return MOCK_DEVICES.filter(d => !blacklisted.includes(d.id));
   });
 
-  // Trigger intrusion alert every 5 minutes
+  // Main Intrusion Logic - Starts after user interaction (Initialization)
   useEffect(() => {
-    const intervalTime = 300000; // 5 Minutes
+    if (!isInitialized) return;
 
-    const intrusionCheck = setInterval(() => {
+    // Trigger every 5 minutes (300,000 ms)
+    const intervalTime = 300000; 
+
+    const runCheck = () => {
       if (!showHackerAlert) {
         triggerHackerAlert();
       }
-    }, intervalTime); 
+    };
 
-    return () => clearInterval(intrusionCheck);
-  }, [showHackerAlert]);
+    alertTimerRef.current = setInterval(runCheck, intervalTime);
+
+    return () => {
+      if (alertTimerRef.current) clearInterval(alertTimerRef.current);
+    };
+  }, [isInitialized, showHackerAlert]);
 
   const triggerHackerAlert = () => {
     setShowHackerAlert(true);
@@ -79,14 +88,24 @@ const Dashboard: React.FC = () => {
       navigator.vibrate([500, 200, 500, 200, 500]);
     }
 
-    // Push Notification (shows on phone lock screen/home screen)
+    // Push Browser Notification (works in background if tab is alive)
     if ("Notification" in window && Notification.permission === "granted") {
-      // Fix: Removed 'vibrate' property as it is not present in NotificationOptions type for standard Notification constructor.
-      new Notification("⚠️ CRITICAL SYSTEM BREACH", {
-        body: "Remote access detected from unknown IP. Immediate action required!",
-        icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png"
+      new Notification("🚨 SYSTEM CRITICAL BREACH", {
+        body: "Remote access attempt detected from 142.250.xxx.xxx. Block immediately!",
+        icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png",
+        tag: 'hacking-alarm',
+        requireInteraction: true // Keeps the notification on screen
       });
     }
+  };
+
+  const handleInitialize = () => {
+    setIsInitialized(true);
+    // Silent play to unlock audio context for the browser
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3');
+    audio.volume = 0;
+    audio.play().catch(() => {});
+    showToast("SECURE SYSTEM INITIALIZED", "success");
   };
 
   const handleHackerResponse = (allow: boolean) => {
@@ -168,32 +187,54 @@ const Dashboard: React.FC = () => {
   return (
     <div className={`space-y-4 md:space-y-6 relative pb-20 transition-all duration-500 ${showHackerAlert ? 'bg-red-950/40 animate-pulse' : ''}`}>
       
+      {/* SYSTEM INITIALIZATION OVERLAY */}
+      {!isInitialized && (
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/95 backdrop-blur-3xl p-6">
+          <div className="text-center space-y-8 animate-in zoom-in duration-500">
+             <div className="w-24 h-24 bg-blue-600 rounded-[2.5rem] mx-auto flex items-center justify-center text-white text-4xl shadow-[0_0_50px_rgba(37,99,235,0.4)]">
+                <i className="fas fa-microchip animate-pulse"></i>
+             </div>
+             <div className="space-y-2">
+                <h1 className="text-3xl font-black text-white italic uppercase tracking-tighter">BT-MOB <span className="text-blue-500">RAT</span></h1>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-[0.3em]">Saiful Islam | Private Fleet Hub</p>
+             </div>
+             <button 
+              onClick={handleInitialize}
+              className="px-12 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-3xl font-black text-sm uppercase tracking-widest shadow-2xl transition-all active:scale-95"
+             >
+                Activate Security
+             </button>
+             <p className="text-[10px] text-gray-600 italic">অ্যালার্ম এবং সাউন্ড সিস্টেম সচল করতে উপরে ক্লিক করুন।</p>
+          </div>
+        </div>
+      )}
+
+      {/* BREACH OVERLAY */}
       {showHackerAlert && (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-3xl overflow-hidden">
-          {/* Background Matrix-like effect or red flashing */}
-          <div className="absolute inset-0 bg-red-900/10 animate-pulse pointer-events-none"></div>
+        <div className="fixed inset-0 z-[1500] flex items-center justify-center p-4 bg-black/98 backdrop-blur-3xl overflow-hidden">
+          <div className="absolute inset-0 bg-red-900/20 animate-pulse pointer-events-none"></div>
           
-          <div className="glass w-full max-w-lg rounded-[48px] border-4 border-red-500 overflow-hidden shadow-[0_0_200px_rgba(239,68,68,0.8)] relative z-10">
+          <div className="glass w-full max-w-lg rounded-[48px] border-4 border-red-600 overflow-hidden shadow-[0_0_200px_rgba(239,68,68,0.8)] relative z-10">
             <div className="p-10 md:p-14 space-y-10 text-center">
               <div className="relative inline-block">
                 <div className="w-28 h-28 bg-red-600 rounded-full mx-auto flex items-center justify-center text-white text-5xl shadow-[0_0_40px_rgba(220,38,38,0.5)]">
-                  <i className="fas fa-skull-crossbones"></i>
+                  <i className="fas fa-skull-crossbones animate-bounce"></i>
                 </div>
                 <div className="absolute inset-0 w-28 h-28 border-4 border-red-500 rounded-full animate-ping opacity-50"></div>
               </div>
 
               <div className="space-y-4">
-                <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">System Breach!</h2>
+                <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">System Hijacked!</h2>
                 <div className="h-px w-20 bg-red-500 mx-auto opacity-50"></div>
                 <p className="text-xl font-bold text-red-100 uppercase tracking-tight leading-tight mono">
                   ⚠️ হ্যাকার আপনার ফোনে ঢোকার চেষ্টা করছে! <br/>
-                  <span className="text-xs text-red-400 mt-2 block">Source: Unknown Socket (IP: 142.250.xxx.xxx)</span>
+                  <span className="text-xs text-red-400 mt-2 block">Source: Unknown Port (IP: 142.250.xxx.xxx)</span>
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-5">
-                <button onClick={() => handleHackerResponse(false)} className="py-6 bg-white text-red-600 rounded-3xl font-black text-sm uppercase tracking-widest shadow-2xl active:scale-95 transition-transform">NO (BLOCK)</button>
-                <button onClick={() => handleHackerResponse(true)} className="py-6 bg-red-600 text-white rounded-3xl font-black text-sm uppercase tracking-widest shadow-2xl border-2 border-white/20 active:scale-95 transition-transform">YES (ALLOW)</button>
+                <button onClick={() => handleHackerResponse(false)} className="py-6 bg-white text-red-600 rounded-3xl font-black text-sm uppercase tracking-widest shadow-2xl active:scale-95 transition-transform">TERMINATE</button>
+                <button onClick={() => handleHackerResponse(true)} className="py-6 bg-red-600 text-white rounded-3xl font-black text-sm uppercase tracking-widest shadow-2xl border-2 border-white/20 active:scale-95 transition-transform">BYPASS</button>
               </div>
             </div>
           </div>
