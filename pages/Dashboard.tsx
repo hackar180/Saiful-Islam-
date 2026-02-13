@@ -204,16 +204,17 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4">
+      <header className="flex flex-wrap flex-col md:flex-row md:items-center justify-between gap-6 pt-4">
         <div>
           <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">SAIFUL <span className="text-blue-500">ISLAM</span></h1>
           <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Active Fleet Orchestration</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button 
+            id="nearby-scan-btn"
             onClick={handleNearbyScan} 
             disabled={scanning}
-            className={`px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${scanning ? 'bg-orange-600 text-white animate-pulse' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'}`}
+            className={`px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${scanning ? 'bg-orange-600 text-white animate-pulse shadow-[0_0_20px_rgba(234,88,12,0.4)]' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'}`}
           >
             {scanning ? <i className="fas fa-satellite-dish fa-spin mr-2"></i> : <i className="fas fa-radar mr-2"></i>}
             {scanning ? 'SCANNING...' : 'NEARBY SCAN'}

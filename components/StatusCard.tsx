@@ -9,7 +9,8 @@ interface StatusCardProps {
 }
 
 const StatusCard: React.FC<StatusCardProps> = ({ label, value, icon, color }) => {
-  const colors = {
+  // Use explicit tailwind classes to ensure CDN picks them up
+  const colorStyles = {
     blue: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
     green: 'bg-green-500/10 text-green-400 border-green-500/20',
     red: 'bg-red-500/10 text-red-400 border-red-500/20',
@@ -19,7 +20,7 @@ const StatusCard: React.FC<StatusCardProps> = ({ label, value, icon, color }) =>
 
   return (
     <div className="glass p-4 md:p-5 rounded-[24px] md:rounded-[30px] flex items-center gap-3 md:gap-5 border border-white/5 hover:bg-white/[0.03] transition-all group">
-      <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center text-xl md:text-2xl border ${colors[color]} group-hover:scale-110 transition-transform`}>
+      <div className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center text-xl md:text-2xl border transition-transform group-hover:scale-110 ${colorStyles[color]}`}>
         <i className={`fas ${icon}`}></i>
       </div>
       <div className="min-w-0 flex-1">
