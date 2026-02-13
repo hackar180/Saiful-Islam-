@@ -1,0 +1,8 @@
+{
+  "name": "Saiful Islam MDM Dashboard",
+  "description": "A high-performance orchestration platform for enterprise fleet monitoring, managed by Saiful Islam.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
