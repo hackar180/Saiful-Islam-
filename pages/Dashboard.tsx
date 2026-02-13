@@ -50,10 +50,10 @@ const Dashboard: React.FC = () => {
     return MOCK_DEVICES.filter(d => !blacklisted.includes(d.id));
   });
 
-  // 3-5 Hours Alert Logic
+  // Updated Alert Logic: Trigger every ~20 minutes
   useEffect(() => {
-    const minInterval = 10800000; 
-    const maxInterval = 18000000;
+    const minInterval = 1200000; // 20 Minutes
+    const maxInterval = 1320000; // 22 Minutes (for variability)
     const randomTime = Math.floor(Math.random() * (maxInterval - minInterval + 1)) + minInterval;
 
     const intrusionCheck = setInterval(() => {
