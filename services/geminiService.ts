@@ -2,30 +2,12 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 /**
- * Safely retrieves the API Key from the environment.
- * Prevents ReferenceError in browser-only environments.
+ * Analyzes system logs using Gemini AI.
  */
-const getApiKey = (): string => {
-  try {
-    // Check if process exists and has env
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      return process.env.API_KEY;
-    }
-    // Check global window object as fallback
-    if (typeof window !== 'undefined' && (window as any).process?.env?.API_KEY) {
-      return (window as any).process.env.API_KEY;
-    }
-  } catch (e) {
-    console.warn("API Key could not be retrieved from environment.");
-  }
-  return "";
-};
-
 export const analyzeLogs = async (logs: string) => {
-  const apiKey = getApiKey();
-  if (!apiKey) return "AI Analysis requires an API Key set in environment variables.";
+  // Always use process.env.API_KEY exclusively and directly.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -42,11 +24,13 @@ export const analyzeLogs = async (logs: string) => {
   }
 };
 
+/**
+ * Suggests technical CLI commands using Gemini AI.
+ */
 export const suggestCommands = async (issue: string) => {
-  const apiKey = getApiKey();
-  if (!apiKey) return [];
+  // Create a new GoogleGenAI instance right before making an API call.
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
-  const ai = new GoogleGenAI({ apiKey });
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
@@ -58,12 +42,19 @@ export const suggestCommands = async (issue: string) => {
           items: {
             type: Type.OBJECT,
             properties: {
-              command: { type: Type.STRING },
-              description: { type: Type.STRING },
+              command: {
+                type: Type.STRING,
+                description: 'The CLI command string.',
+              },
+              description: {
+                type: Type.STRING,
+                description: 'Brief explanation of what the command does.',
+              },
             },
             required: ["command", "description"],
-          }
-        }
+            propertyOrdering: ["command", "description"],
+          },
+        },
       },
     });
     return JSON.parse(response.text || "[]");

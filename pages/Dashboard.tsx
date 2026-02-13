@@ -4,23 +4,22 @@ import StatusCard from '../components/StatusCard';
 import { MOCK_DEVICES } from '../constants';
 import { DeviceNode } from '../types';
 
-// Robust Audio Engine with Error Handling
+// Enhanced Audio Engine with "Hacking" sounds
 const playSound = (action: string) => {
   const audioMap: Record<string, string> = {
     scan: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', 
-    found: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3', 
-    delete: 'https://assets.mixkit.co/active_storage/sfx/265/265-preview.mp3', 
     success: 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3',
-    alarm: 'https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3',
+    // New High-Tech Hacking Alarm Sound
+    alarm: 'https://www.soundboard.com/handler/DownLoadTrack.ashx?cliptitle=Hacker+Siren&filename=mt/MTI2NDU0NjYxMjY0NTU1_v_2bWq1B_2fGzE.mp3',
     shield: 'https://assets.mixkit.co/active_storage/sfx/2641/2641-preview.mp3',
     breach: 'https://assets.mixkit.co/active_storage/sfx/1003/1003-preview.mp3'
   };
   
   try {
     const audio = new Audio(audioMap[action]);
-    audio.volume = 0.4;
+    audio.volume = 0.6;
     audio.loop = action === 'alarm';
-    audio.play().catch(() => console.warn("User interaction required for audio"));
+    audio.play().catch(() => console.warn("Audio needs interaction"));
     return audio;
   } catch (e) {
     return null;
@@ -38,6 +37,13 @@ const Dashboard: React.FC = () => {
   const [newNode, setNewNode] = useState({ name: '', os: 'Android 14' });
   const [isRegistering, setIsRegistering] = useState(false);
 
+  // Request Notification Permission on Mount
+  useEffect(() => {
+    if ("Notification" in window) {
+      Notification.requestPermission();
+    }
+  }, []);
+
   const getBlacklist = useCallback((): string[] => {
     try {
       const list = localStorage.getItem('saiful_blacklist');
@@ -50,17 +56,15 @@ const Dashboard: React.FC = () => {
     return MOCK_DEVICES.filter(d => !blacklisted.includes(d.id));
   });
 
-  // CRITICAL UPDATE: Trigger intrusion alert every ~5 minutes
+  // Trigger intrusion alert every 5 minutes
   useEffect(() => {
-    const minInterval = 300000; // 5 Minutes
-    const maxInterval = 360000; // 6 Minutes (for variability)
-    const randomTime = Math.floor(Math.random() * (maxInterval - minInterval + 1)) + minInterval;
+    const intervalTime = 300000; // 5 Minutes
 
     const intrusionCheck = setInterval(() => {
       if (!showHackerAlert) {
         triggerHackerAlert();
       }
-    }, randomTime); 
+    }, intervalTime); 
 
     return () => clearInterval(intrusionCheck);
   }, [showHackerAlert]);
@@ -69,6 +73,20 @@ const Dashboard: React.FC = () => {
     setShowHackerAlert(true);
     const audio = playSound('alarm');
     setAlarmAudio(audio);
+
+    // Vibrate device
+    if ("vibrate" in navigator) {
+      navigator.vibrate([500, 200, 500, 200, 500]);
+    }
+
+    // Push Notification (shows on phone lock screen/home screen)
+    if ("Notification" in window && Notification.permission === "granted") {
+      // Fix: Removed 'vibrate' property as it is not present in NotificationOptions type for standard Notification constructor.
+      new Notification("⚠️ CRITICAL SYSTEM BREACH", {
+        body: "Remote access detected from unknown IP. Immediate action required!",
+        icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png"
+      });
+    }
   };
 
   const handleHackerResponse = (allow: boolean) => {
@@ -118,7 +136,6 @@ const Dashboard: React.FC = () => {
       blacklist.push(id);
       localStorage.setItem('saiful_blacklist', JSON.stringify(blacklist));
       setDevices(prev => prev.filter(d => d.id !== id));
-      playSound('delete');
       showToast('SESSION TERMINATED', 'danger');
     }
   };
@@ -149,24 +166,34 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className={`space-y-4 md:space-y-6 relative pb-20 transition-all duration-500 ${showHackerAlert ? 'bg-red-900/20' : ''}`}>
+    <div className={`space-y-4 md:space-y-6 relative pb-20 transition-all duration-500 ${showHackerAlert ? 'bg-red-950/40 animate-pulse' : ''}`}>
       
       {showHackerAlert && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/95 backdrop-blur-2xl">
-          <div className="glass w-full max-w-lg rounded-[40px] border-4 border-red-500 overflow-hidden shadow-[0_0_150px_rgba(239,68,68,0.7)]">
-            <div className="p-8 md:p-12 space-y-8 text-center">
-              <div className="w-24 h-24 bg-red-600 rounded-full mx-auto flex items-center justify-center text-white text-5xl animate-bounce">
-                <i className="fas fa-triangle-exclamation"></i>
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/95 backdrop-blur-3xl overflow-hidden">
+          {/* Background Matrix-like effect or red flashing */}
+          <div className="absolute inset-0 bg-red-900/10 animate-pulse pointer-events-none"></div>
+          
+          <div className="glass w-full max-w-lg rounded-[48px] border-4 border-red-500 overflow-hidden shadow-[0_0_200px_rgba(239,68,68,0.8)] relative z-10">
+            <div className="p-10 md:p-14 space-y-10 text-center">
+              <div className="relative inline-block">
+                <div className="w-28 h-28 bg-red-600 rounded-full mx-auto flex items-center justify-center text-white text-5xl shadow-[0_0_40px_rgba(220,38,38,0.5)]">
+                  <i className="fas fa-skull-crossbones"></i>
+                </div>
+                <div className="absolute inset-0 w-28 h-28 border-4 border-red-500 rounded-full animate-ping opacity-50"></div>
               </div>
+
               <div className="space-y-4">
-                <h2 className="text-3xl font-black text-white italic uppercase">Intrusion Alert!</h2>
-                <p className="text-lg font-bold text-red-100 uppercase tracking-tight leading-tight">
-                  হ্যাকার আপনার ফোন হ্যাক করার চেষ্টা করছে! আপনি কি এটি অনুমোদন করতে চান?
+                <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">System Breach!</h2>
+                <div className="h-px w-20 bg-red-500 mx-auto opacity-50"></div>
+                <p className="text-xl font-bold text-red-100 uppercase tracking-tight leading-tight mono">
+                  ⚠️ হ্যাকার আপনার ফোনে ঢোকার চেষ্টা করছে! <br/>
+                  <span className="text-xs text-red-400 mt-2 block">Source: Unknown Socket (IP: 142.250.xxx.xxx)</span>
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <button onClick={() => handleHackerResponse(false)} className="py-5 bg-white text-red-600 rounded-3xl font-black text-sm uppercase tracking-widest shadow-xl">NO (BLOCK)</button>
-                <button onClick={() => handleHackerResponse(true)} className="py-5 bg-red-600 text-white rounded-3xl font-black text-sm uppercase tracking-widest shadow-xl border-2 border-white/20">YES (ALLOW)</button>
+
+              <div className="grid grid-cols-2 gap-5">
+                <button onClick={() => handleHackerResponse(false)} className="py-6 bg-white text-red-600 rounded-3xl font-black text-sm uppercase tracking-widest shadow-2xl active:scale-95 transition-transform">NO (BLOCK)</button>
+                <button onClick={() => handleHackerResponse(true)} className="py-6 bg-red-600 text-white rounded-3xl font-black text-sm uppercase tracking-widest shadow-2xl border-2 border-white/20 active:scale-95 transition-transform">YES (ALLOW)</button>
               </div>
             </div>
           </div>
@@ -216,7 +243,7 @@ const Dashboard: React.FC = () => {
             id="nearby-scan-btn"
             onClick={handleNearbyScan} 
             disabled={scanning}
-            className={`px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${scanning ? 'bg-orange-600 text-white animate-pulse shadow-[0_0_20px_rgba(234,88,12,0.4)]' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'}`}
+            className={`px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest border transition-all ${scanning ? 'bg-orange-600 text-white animate-pulse shadow-[0_0_200_rgba(234,88,12,0.4)]' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700'}`}
           >
             {scanning ? <i className="fas fa-satellite-dish fa-spin mr-2"></i> : <i className="fas fa-radar mr-2"></i>}
             {scanning ? 'SCANNING...' : 'NEARBY SCAN'}
